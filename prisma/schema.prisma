@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum QuoteStatus {
+  QUOTE_GENERATED
+  MEDICAL_DECLARED
+  PREMIUM_PAID
+  POLICY_ISSUED
+}
+
+model Quote {
+  id                       String      @id @default(uuid())
+  age                      Int
+  hasPreExistingConditions Boolean     @map("has_pre_existing_conditions")
+  basePremium              Decimal     @db.Decimal(10, 2) @map("base_premium")
+  loadingFee               Decimal     @db.Decimal(10, 2) @map("loading_fee")
+  totalPremium             Decimal     @db.Decimal(10, 2) @map("total_premium")
+  status                   QuoteStatus @default(QUOTE_GENERATED)
+  medicalDeclaration       Json?       @map("medical_declaration")
+  idempotencyKey           String?     @unique @map("idempotency_key")
+  createdAt                DateTime    @default(now()) @map("created_at")
+  expiresAt                DateTime    @map("expires_at")
+  policy                   Policy?
+
+  @@map("quotes")
+}
+
+model Policy {
+  id          String   @id @default(uuid())
+  quoteId     String   @unique @map("quote_id")
+  quote       Quote    @relation(fields: [quoteId], references: [id])
+  contractId  String   @unique @map("contract_id")
+  premiumPaid Decimal  @db.Decimal(10, 2) @map("premium_paid")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("policies")
+}
